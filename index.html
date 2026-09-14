@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Syntec Check-in</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{
+      background:#020202;
+      color:#F4F3F4;
+      font-family:'Poppins',sans-serif;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .card{
+      background:#111111;
+      border-radius:20px;
+      padding:36px 28px;
+      max-width:380px;
+      width:100%;
+      text-align:center;
+    }
+    .logo{
+      font-size:12px;
+      font-weight:600;
+      color:#787A77;
+      letter-spacing:2.5px;
+      text-transform:uppercase;
+      margin-bottom:28px;
+    }
+    .logo span{color:#2ECF6F}
+
+    /* ── STATE WRAPPERS ── */
+    .state{display:none}
+    .state.active{display:block}
+
+    /* ── PIN STATE ── */
+    .pin-label{
+      font-size:14px;
+      font-weight:500;
+      color:#787A77;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      margin-bottom:20px;
+    }
+    .pin-dots{
+      display:flex;
+      gap:12px;
+      justify-content:center;
+      margin-bottom:24px;
+    }
+    .pin-dot{
+      width:14px;height:14px;
+      border-radius:50%;
+      border:2px solid #4F4E4F;
+      transition:all 0.2s;
+    }
+    .pin-dot.filled{
+      background:#2ECF6F;
+      border-color:#2ECF6F;
+      box-shadow:0 0 8px rgba(46,207,111,0.4);
+    }
+    .pin-dot.error{
+      background:#E74C3C;
+      border-color:#E74C3C;
+    }
+    .pin-error{
+      font-size:13px;
+      color:#E74C3C;
+      margin-bottom:16px;
+      min-height:18px;
+      font-weight:500;
+    }
+    .keypad{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-top:8px;
+    }
+    .key{
+      background:#1a1a1a;
+      border:1px solid #222;
+      border-radius:12px;
+      padding:16px 8px;
+      font-size:20px;
+      font-weight:600;
+      color:#F4F3F4;
+      cursor:pointer;
+      transition:background 0.15s,transform 0.1s;
+      user-select:none;
+    }
+    .key:active{background:#2a2a2a;transform:scale(0.95)}
+    .key.clr{font-size:13px;color:#787A77;font-weight:500}
+    .key.ok{background:#2ECF6F;color:#020202;font-size:14px;font-weight:700}
+    .key.ok:active{background:#249C56}
+    .key.ok:disabled{background:#333;color:#555;cursor:not-allowed}
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-8px)}
+      40%{transform:translateX(8px)}
+      60%{transform:translateX(-6px)}
+      80%{transform:translateX(6px)}
+    }
+    .shake{animation:shake 0.4s ease}
+
+    /* ── ICON CIRCLE ── */
+    .icon{
+      width:72px;height:72px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0 auto 20px;
+      font-size:30px;
+    }
+    .icon.green{background:rgba(46,207,111,0.12)}
+    .icon.amber{background:rgba(243,156,18,0.12)}
+    .icon.red{background:rgba(231,76,60,0.12)}
+    .icon.loading-bg{background:#1a1a1a}
+
+    /* ── SPINNER ── */
+    .spinner{
+      width:34px;height:34px;
+      border:3px solid #1a1a1a;
+      border-top:3px solid #2ECF6F;
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+      margin:0 auto;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── TITLE & SUBTITLE ── */
+    .title{font-size:22px;font-weight:700;margin-bottom:8px;line-height:1.3}
+    .subtitle{font-size:14px;color:#787A77;line-height:1.6;margin-bottom:20px}
+
+    /* ── VISIT BADGE ── */
+    .visit-badge{
+      display:inline-block;
+      background:rgba(46,207,111,0.1);
+      border:1px solid rgba(46,207,111,0.3);
+      color:#2ECF6F;
+      font-size:14px;
+      font-weight:600;
+      padding:8px 22px;
+      border-radius:8px;
+      margin-bottom:18px;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap{margin-top:4px}
+    .progress-label{
+      font-size:12px;
+      color:#787A77;
+      margin-bottom:8px;
+      text-align:left;
+    }
+    .progress-bar{
+      background:#1a1a1a;
+      border-radius:99px;
+      height:8px;
+      overflow:hidden;
+    }
+    .progress-fill{
+      background:#2ECF6F;
+      height:100%;
+      border-radius:99px;
+      transition:width 0.8s ease;
+      width:0%;
+    }
+
+    /* ── REWARD BOX ── */
+    .reward-box{
+      background:rgba(46,207,111,0.07);
+      border:1px solid rgba(46,207,111,0.2);
+      border-radius:14px;
+      padding:20px;
+      margin-top:4px;
+    }
+    .reward-label{
+      font-size:11px;
+      color:#2ECF6F;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:2px;
+      margin-bottom:8px;
+    }
+    .reward-desc{font-size:18px;font-weight:700;margin-bottom:14px}
+    .reward-code{
+      background:#1a1a1a;
+      border-radius:10px;
+      padding:14px;
+      font-family:monospace;
+      font-size:22px;
+      font-weight:700;
+      letter-spacing:5px;
+      color:#2ECF6F;
+      cursor:pointer;
+      position:relative;
+      transition:background 0.2s;
+    }
+    .reward-code:active{background:#222}
+    .reward-hint{font-size:12px;color:#787A77;margin-top:10px;line-height:1.5}
+
+    /* ── RETRY BUTTON ── */
+    .retry-btn{
+      background:transparent;
+      border:1px solid #4F4E4F;
+      color:#F4F3F4;
+      padding:12px 28px;
+      border-radius:8px;
+      font-size:14px;
+      font-weight:500;
+      font-family:'Poppins',sans-serif;
+      cursor:pointer;
+      margin-top:16px;
+      transition:background 0.2s;
+    }
+    .retry-btn:active{background:#1a1a1a}
+
+    /* ── POWERED BY ── */
+    .powered{font-size:11px;color:#333;margin-top:28px}
+    .powered span{color:#2ECF6F}
+
+    /* ── COPY TOAST ── */
+    .copy-toast{
+      position:fixed;
+      bottom:32px;
+      left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:#2ECF6F;
+      color:#020202;
+      padding:10px 24px;
+      border-radius:8px;
+      font-size:13px;
+      font-weight:600;
+      font-family:'Poppins',sans-serif;
+      opacity:0;
+      transition:all 0.3s;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo"><span>SYNTEC</span> MEMBERSHIP</div>
+
+  <!-- STATE: PIN -->
+  <div class="state active" id="state-pin">
+    <div class="pin-label">Enter Staff PIN</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <div class="keypad" id="keypad">
+      <div class="key" onclick="keyPress('1')">1</div>
+      <div class="key" onclick="keyPress('2')">2</div>
+      <div class="key" onclick="keyPress('3')">3</div>
+      <div class="key" onclick="keyPress('4')">4</div>
+      <div class="key" onclick="keyPress('5')">5</div>
+      <div class="key" onclick="keyPress('6')">6</div>
+      <div class="key" onclick="keyPress('7')">7</div>
+      <div class="key" onclick="keyPress('8')">8</div>
+      <div class="key" onclick="keyPress('9')">9</div>
+      <div class="key clr" onclick="keyPress('CLR')">CLR</div>
+      <div class="key" onclick="keyPress('0')">0</div>
+      <div class="key ok" id="ok-btn" onclick="keyPress('OK')">OK</div>
+    </div>
+  </div>
+
+  <!-- STATE: LOADING -->
+  <div class="state" id="state-loading">
+    <div class="icon loading-bg">
+      <div class="spinner"></div>
+    </div>
+    <div class="title">Checking in...</div>
+    <div class="subtitle">Please wait a moment.</div>
+  </div>
+
+  <!-- STATE: SUCCESS -->
+  <div class="state" id="state-success">
+    <div class="icon green" style="font-size:32px">✓</div>
+    <div class="title" id="success-name">Welcome back!</div>
+    <div class="subtitle">Your visit has been recorded.</div>
+    <div class="visit-badge" id="success-visit"></div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-label" id="progress-label"></div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE: REWARD -->
+  <div class="state" id="state-reward">
+    <div class="icon green" style="font-size:30px">🎉</div>
+    <div class="title" id="reward-name">Reward Unlocked!</div>
+    <div class="subtitle">Congratulations — check your email for details.</div>
+    <div class="visit-badge" id="reward-visit"></div>
+    <div class="reward-box">
+      <div class="reward-label">Your Reward</div>
+      <div class="reward-desc" id="reward-desc"></div>
+      <div class="reward-code" id="reward-code" onclick="copyCode()" title="Tap to copy"></div>
+      <div class="reward-hint">Tap the code to copy · Show to staff to redeem</div>
+    </div>
+  </div>
+
+  <!-- STATE: COOLDOWN -->
+  <div class="state" id="state-cooldown">
+    <div class="icon amber" style="font-size:28px">⏱</div>
+    <div class="title">Already Checked In</div>
+    <div class="subtitle">You've already checked in today.<br>Come back tomorrow for your next visit.</div>
+  </div>
+
+  <!-- STATE: CARD NOT FOUND -->
+  <div class="state" id="state-notfound">
+    <div class="icon red" style="font-size:28px;color:#E74C3C">!</div>
+    <div class="title">Card Not Recognised</div>
+    <div class="subtitle">This card isn't registered in the system.<br>Please see staff for assistance.</div>
+  </div>
+
+  <!-- STATE: ERROR -->
+  <div class="state" id="state-error">
+    <div class="icon red" style="font-size:28px;color:#E74C3C">✕</div>
+    <div class="title">Something Went Wrong</div>
+    <div class="subtitle" id="error-msg">Connection error. Please try again or see staff.</div>
+    <button class="retry-btn" onclick="retryCheckIn()">Try Again</button>
+  </div>
+
+  <div class="powered">Powered by <span>Syntec</span></div>
+</div>
+
+<div class="copy-toast" id="copy-toast">Code copied!</div>
+
+<script>
+  // ── CONFIG ──
+  const WEBHOOK = 'https://syntec.app.n8n.cloud/webhook/fa1bd9ea-aef8-46c8-9a90-2e864fb51e77';
+  const VALID_PINS = ['2527', '5688'];
+  const SESSION_KEY = 'syntec_pin_session';
+
+  // ── PIN STATE ──
+  let pinEntry = '';
+  let cardUid = null;
+
+  // ── HELPERS ──
+  function showState(id) {
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+    document.getElementById('state-' + id).classList.add('active');
+  }
+
+  function updateDots(error) {
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById('dot-' + i);
+      dot.classList.remove('filled', 'error');
+      if (error) {
+        dot.classList.add('error');
+      } else if (i < pinEntry.length) {
+        dot.classList.add('filled');
+      }
+    }
+  }
+
+  function keyPress(key) {
+    if (key === 'CLR') {
+      pinEntry = pinEntry.slice(0, -1);
+      document.getElementById('pin-error').textContent = '';
+      updateDots(false);
+      return;
+    }
+    if (key === 'OK') {
+      validatePin();
+      return;
+    }
+    if (pinEntry.length < 4) {
+      pinEntry += key;
+      updateDots(false);
+      if (pinEntry.length === 4) {
+        // Auto-submit after 4 digits
+        setTimeout(validatePin, 150);
+      }
+    }
+  }
+
+  function validatePin() {
+    if (pinEntry.length < 4) {
+      document.getElementById('pin-error').textContent = 'Enter all 4 digits.';
+      return;
+    }
+    if (VALID_PINS.includes(pinEntry)) {
+      // Save session for today
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem(SESSION_KEY, today);
+      // Proceed to check-in
+      doCheckIn();
+    } else {
+      // Wrong PIN
+      document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+      const dots = document.getElementById('pin-dots');
+      updateDots(true);
+      dots.classList.add('shake');
+      setTimeout(() => {
+        dots.classList.remove('shake');
+        pinEntry = '';
+        updateDots(false);
+        document.getElementById('pin-error').textContent = '';
+      }, 600);
+    }
+  }
+
+  function checkSession() {
+    const session = localStorage.getItem(SESSION_KEY);
+    const today = new Date().toISOString().split('T')[0];
+    return session === today;
+  }
+
+  // ── CHECK-IN FLOW ──
+  function doCheckIn() {
+    if (!cardUid) {
+      showState('error');
+      document.getElementById('error-msg').textContent = 'No card detected. Please tap your card again.';
+      return;
+    }
+    showState('loading');
+    fetch(WEBHOOK, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({card_uid: cardUid})
+    })
+    .then(r => r.json())
+    .then(data => handleResponse(data))
+    .catch(() => {
+      showState('error');
+      document.getElementById('error-msg').textContent = 'Connection error. Please try again or see staff.';
+    });
+  }
+
+  function handleResponse(data) {
+    if (!data.success) {
+      const msg = (data.message || '').toLowerCase();
+      if (msg.includes('already checked in')) {
+        showState('cooldown');
+        setTimeout(resetPage, 5000);
+      } else if (msg.includes('not found') || msg.includes('card')) {
+        showState('notfound');
+        setTimeout(resetPage, 5000);
+      } else {
+        showState('error');
+        document.getElementById('error-msg').textContent = data.message || 'Something went wrong. Please see staff.';
+      }
+      return;
+    }
+
+    if (data.reward) {
+      showState('reward');
+      document.getElementById('reward-name').textContent =
+        data.member_name ? 'Reward Unlocked, ' + data.member_name + '!' : 'Reward Unlocked!';
+      document.getElementById('reward-visit').textContent =
+        data.visit_count ? 'Visit ' + data.visit_count + ' recorded' : '';
+      document.getElementById('reward-desc').textContent = data.reward_description || 'Reward earned';
+      document.getElementById('reward-code').textContent = data.redemption_code || '';
+      setTimeout(resetPage, 8000);
+    } else {
+      showState('success');
+      document.getElementById('success-name').textContent =
+        data.member_name ? 'Welcome back, ' + data.member_name + '!' : 'Welcome back!';
+      document.getElementById('success-visit').textContent =
+        data.visit_count ? 'Visit ' + data.visit_count + ' recorded' : 'Visit recorded';
+
+      if (data.visit_count && data.visit_threshold) {
+        const pct = Math.min((data.visit_count / data.visit_threshold) * 100, 100);
+        document.getElementById('progress-wrap').style.display = 'block';
+        document.getElementById('progress-label').textContent =
+          data.visit_count + ' of ' + data.visit_threshold +
+          ' visits to ' + (data.reward_description || 'your reward');
+        setTimeout(() => {
+          document.getElementById('progress-fill').style.width = pct + '%';
+        }, 300);
+      }
+      setTimeout(resetPage, 5000);
+    }
+  }
+
+  function resetPage() {
+    // Reset to PIN or loading depending on session
+    pinEntry = '';
+    updateDots(false);
+    document.getElementById('pin-error').textContent = '';
+    document.getElementById('progress-wrap').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0%';
+
+    if (checkSession()) {
+      // Session still valid — go straight to check-in
+      doCheckIn();
+    } else {
+      showState('pin');
+    }
+  }
+
+  function retryCheckIn() {
+    if (checkSession()) {
+      doCheckIn();
+    } else {
+      pinEntry = '';
+      updateDots(false);
+      document.getElementById('pin-error').textContent = '';
+      showState('pin');
+    }
+  }
+
+  function copyCode() {
+    const code = document.getElementById('reward-code').textContent;
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      const toast = document.getElementById('copy-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+  }
+
+  // ── INIT ──
+  function init() {
+    const params = new URLSearchParams(window.location.search);
+    cardUid = params.get('uid');
+
+    if (!cardUid) {
+      showState('error');
+      document.getElementById('error-msg').textContent = 'No card detected. Please tap your card again.';
+      return;
+    }
+
+    if (checkSession()) {
+      // Valid session today — skip PIN
+      doCheckIn();
+    } else {
+      showState('pin');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
